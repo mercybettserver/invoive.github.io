@@ -1,488 +1,363 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BRIANSEVERALL SOLUTIONS — Invoice & Quotation Generator</title>
+
+<!-- jsPDF + AutoTable -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
 <style>
   *{box-sizing:border-box;font-family:Poppins,Segoe UI,Roboto,Arial,sans-serif}
-  body{background:#f4f6f9;color:#04191a;display:flex;flex-direction:column;align-items:center;padding:28px}
-  h1{color:#0f5132;margin-bottom:14px}
-  .card{background:#fff;border:2px solid #0f5132;border-radius:10px;padding:20px;width:760px;box-shadow:0 6px 20px rgba(0,0,0,0.06)}
+  body{background:#f4f7f4;color:#003d1a;display:flex;flex-direction:column;align-items:center;padding:30px}
+  h1{color:#0B6B34;margin-bottom:14px;display:flex;align-items:center;gap:8px;font-size:22px}
+  .card{background:#fff;border:2px solid #0B6B34;border-radius:12px;padding:20px;width:760px;box-shadow:0 6px 20px rgba(0,0,0,0.06)}
   label{display:block;font-weight:600;margin-top:10px;font-size:13px}
   input,select,textarea{width:100%;padding:9px;border-radius:8px;border:1px solid #ccc;margin-top:6px}
   .row{display:flex;gap:12px}
   .col{flex:1}
   .small{width:180px}
-  button{background:#0f5132;color:#fff;padding:12px 16px;border-radius:8px;border:0;font-weight:700;cursor:pointer}
-  button:hover{background:#198754}
-  #mpesaCodeContainer{display:none}
-  .muted{color:#666;font-size:13px}
-  .inline{display:inline-block}
-  .items-table{border-collapse:collapse;width:100%;margin-top:8px}
-  .items-table th, .items-table td{border:1px solid #ddd;padding:8px;font-size:13px}
-  .items-table th{background:#f7fdf7;color:#0f5132}
-  .right{text-align:right}
-  .top-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+  button{background:#0B6B34;color:#fff;padding:12px 18px;border-radius:8px;border:0;font-weight:700;cursor:pointer}
+  button:hover{background:#128c46}
+  #clearBtn{background:#d62828;}
+  #clearBtn:hover{background:#b91c1c;}
+  #mpesaCodeContainerInvoice{display:none}
   .note{font-size:13px;color:#444;margin-top:10px}
+  .top-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+  .items-table{border-collapse:collapse;width:100%;margin-top:8px}
+  .items-table th,.items-table td{border:1px solid #ddd;padding:8px;font-size:13px}
+  .items-table th{background:#e8f5ec;color:#0B6B34}
+  .balance-box{margin-top:10px;font-weight:600;color:#0B6B34}
 </style>
 </head>
 <body>
-  <h1>BRIANSEVERALL SOLUTIONS</h1>
-  <div class="card">
-    <div class="top-actions">
-      <div>
-        <label>Document Type</label>
-        <select id="docType">
-          <option value="invoice">Invoice</option>
-          <option value="quotation">Quotation</option>
-        </select>
-      </div>
-      <div style="text-align:right">
-        <label>Prepared By</label>
-        <select id="preparedBy" style="width:220px">
-          <option value="Brian Bett - System Admin">Brian Bett - System Admin</option>
-          <option value="Mercy Bett - Senior Accountant">Mercy Bett - Senior Accountant</option>
-        </select>
-      </div>
+<h1>BRIANSEVERALL SOLUTIONS</h1>
+
+<div class="card">
+  <div class="top-actions">
+    <div>
+      <label>Document Type</label>
+      <select id="docType">
+        <option value="invoice">Invoice</option>
+        <option value="quotation">Quotation</option>
+      </select>
     </div>
-
-    <!-- INVOICE FORM -->
-    <div id="invoiceForm">
-      <div class="row">
-        <div class="col">
-          <label>Customer Name</label>
-          <input id="invCustomer" placeholder="Customer full name"/>
-        </div>
-        <div class="col small">
-          <label>Date</label>
-          <input id="invDate" type="date"/>
-        </div>
-      </div>
-
-      <label>Service / Description</label>
-      <input id="invService" placeholder="e.g. Computer Repair - Diagnostics & Fix"/>
-
-      <div class="row">
-        <div class="col">
-          <label>Total Amount (Ksh)</label>
-          <input id="invTotal" type="number" min="0" step="0.01" placeholder="0.00"/>
-        </div>
-        <div class="col">
-          <label>Amount Paid (Ksh)</label>
-          <input id="invPaid" type="number" min="0" step="0.01" placeholder="0.00"/>
-        </div>
-        <div class="col small">
-          <label>Payment Method</label>
-          <select id="invPayment">
-            <option value="">Select</option>
-            <option value="Cash">Cash</option>
-            <option value="M-Pesa">M-Pesa</option>
-          </select>
-        </div>
-      </div>
-
-      <div id="mpesaCodeContainerInvoice" style="display:none">
-        <label>M-Pesa Transaction Code</label>
-        <input id="invMpesaCode" maxlength="15" placeholder="e.g. QWE12345XY"/>
-      </div>
-
-      <div class="note">
-        <strong>Pay to Till:</strong> 8638410 (Brian Kiprop) — this will show on the Invoice PDF.
-      </div>
-    </div>
-
-    <!-- QUOTATION FORM -->
-    <div id="quotationForm" style="display:none;margin-top:12px">
-      <div class="row">
-        <div class="col">
-          <label>Client Name</label>
-          <input id="qClient" placeholder="Client full name"/>
-        </div>
-        <div class="col small">
-          <label>Quote Date</label>
-          <input id="qDate" type="date"/>
-        </div>
-        <div class="col small">
-          <label>Valid Until</label>
-          <input id="qValidUntil" type="date"/>
-        </div>
-      </div>
-
-      <label>Items (press Enter inside an Item Description to add the next item automatically)</label>
-      <table class="items-table" id="itemsTable" aria-label="quotation items">
-        <thead>
-          <tr>
-            <th style="width:48px">#</th>
-            <th>Description</th>
-            <th style="width:160px">Unit Cost (Ksh)</th>
-            <th style="width:140px">Amount (Ksh)</th>
-          </tr>
-        </thead>
-        <tbody id="itemsBody">
-          <!-- rows appended by JS -->
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colspan="3" class="right"><strong>Total</strong></td>
-            <td><input id="qTotal" readonly style="width:120px;padding:6px;border-radius:6px;border:1px solid #ccc;background:#f7f7f7"/></td>
-          </tr>
-        </tfoot>
-      </table>
-      <div class="note">Tip: Tab into Unit Cost and press Enter to add next item too.</div>
-    </div>
-
-    <div style="margin-top:16px;display:flex;gap:10px;align-items:center">
-      <button id="generateBtn">Generate PDF</button>
-      <button id="clearBtn" style="background:#777">Clear</button>
-    </div>
-
-    <div style="margin-top:12px" class="muted">
-      Logo & stamp are placeholders — replace `logoBase64` and `stampBase64` in the script with your real Base64 images.
+    <div style="text-align:right">
+      <label>Prepared By</label>
+      <select id="preparedBy" style="width:240px">
+        <option value="Brian Bett - System Admin">Brian Bett - System Admin</option>
+        <option value="Mercy Bett - Senior Accountant">Mercy Bett - Senior Accountant</option>
+      </select>
     </div>
   </div>
 
+  <!-- INVOICE FORM -->
+  <div id="invoiceForm">
+    <div class="row">
+      <div class="col">
+        <label>Customer Name</label>
+        <input id="invCustomer" placeholder="Customer full name">
+      </div>
+      <div class="col small">
+        <label>Date</label>
+        <input id="invDate" type="date">
+      </div>
+    </div>
+
+    <label>Service / Description</label>
+    <input id="invService" placeholder="e.g. Electrical Installation / Repair">
+
+    <div class="row">
+      <div class="col">
+        <label>Total Amount (Ksh)</label>
+        <input id="invTotal" type="number" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="col">
+        <label>Amount Paid (Ksh)</label>
+        <input id="invPaid" type="number" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="col small">
+        <label>Payment Method</label>
+        <select id="invPayment">
+          <option value="">Select</option>
+          <option value="Cash">Cash</option>
+          <option value="M-Pesa">M-Pesa</option>
+          <option value="Till Number 8638410">Till Number 8638410</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="balance-box">
+      Balance Due: Ksh <span id="invBalance">0.00</span>
+    </div>
+
+    <div id="mpesaCodeContainerInvoice">
+      <label>M-Pesa Transaction Code</label>
+      <input id="invMpesaCode" maxlength="15" placeholder="e.g. QWE12345XY">
+    </div>
+
+    <div class="note">
+      <strong>Pay to Till Number:</strong> 8638410 (BRIANSEVERALL SOLUTIONS)
+    </div>
+  </div>
+
+  <!-- QUOTATION FORM -->
+  <div id="quotationForm" style="display:none;margin-top:12px">
+    <div class="row">
+      <div class="col">
+        <label>Client Name</label>
+        <input id="qClient" placeholder="Client full name">
+      </div>
+      <div class="col small">
+        <label>Quote Date</label>
+        <input id="qDate" type="date">
+      </div>
+      <div class="col small">
+        <label>Valid Until</label>
+        <input id="qValidUntil" type="date">
+      </div>
+    </div>
+
+    <label>Items (press Enter to add next row)</label>
+    <table class="items-table" id="itemsTable">
+      <thead>
+        <tr>
+          <th>S/No</th>
+          <th>Item</th>
+          <th>Description</th>
+          <th>Unit</th>
+          <th>Qty</th>
+          <th>Rate (Ksh)</th>
+          <th>Total Amount (Ksh)</th>
+        </tr>
+      </thead>
+      <tbody id="itemsBody"></tbody>
+    </table>
+    <div style="text-align:right;margin-top:10px">
+      <strong>Total: </strong><span id="qTotal">0.00</span> Ksh
+    </div>
+  </div>
+
+  <div style="margin-top:20px;text-align:right;display:flex;justify-content:flex-end;gap:10px;">
+    <button id="clearBtn">Clear Form</button>
+    <button id="printBtn">Generate Professional PDF</button>
+  </div>
+</div>
+
 <script>
 const { jsPDF } = window.jspdf;
+const green = [11, 107, 52];
+const lightGreen = [232, 245, 236];
+const docType = document.getElementById("docType");
+const invoiceForm = document.getElementById("invoiceForm");
+const quotationForm = document.getElementById("quotationForm");
+const invPayment = document.getElementById("invPayment");
+const mpesaContainer = document.getElementById("mpesaCodeContainerInvoice");
+const itemsBody = document.getElementById("itemsBody");
+const qTotal = document.getElementById("qTotal");
+const clearBtn = document.getElementById("clearBtn");
+const invTotal = document.getElementById("invTotal");
+const invPaid = document.getElementById("invPaid");
+const invBalance = document.getElementById("invBalance");
 
-// --- Replace with your actual base64 images ---
-const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."; // <-- REPLACE
-const stampBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."; // <-- REPLACE
-// ------------------------------------------------------------------
+docType.onchange = () => {
+  invoiceForm.style.display = docType.value === "invoice" ? "block" : "none";
+  quotationForm.style.display = docType.value === "quotation" ? "block" : "none";
+};
 
-// DOM refs
-const docType = document.getElementById('docType');
-const invoiceForm = document.getElementById('invoiceForm');
-const quotationForm = document.getElementById('quotationForm');
-const invPayment = document.getElementById('invPayment');
-const mpesaCodeInvoice = document.getElementById('mpesaCodeContainerInvoice');
-const generateBtn = document.getElementById('generateBtn');
-const clearBtn = document.getElementById('clearBtn');
-const preparedBy = document.getElementById('preparedBy');
+invPayment.onchange = () => {
+  mpesaContainer.style.display = invPayment.value === "M-Pesa" ? "block" : "none";
+};
 
-// Quotation items body
-const itemsBody = document.getElementById('itemsBody');
-const qTotalInput = document.getElementById('qTotal');
+// Update balance automatically
+function updateBalance() {
+  const total = parseFloat(invTotal.value) || 0;
+  const paid = parseFloat(invPaid.value) || 0;
+  const balance = total - paid;
+  invBalance.textContent = balance.toFixed(2);
+}
+invTotal.addEventListener("input", updateBalance);
+invPaid.addEventListener("input", updateBalance);
 
-// switch view based on selection
-docType.addEventListener('change', () => {
-  const t = docType.value;
-  if (t === 'invoice') {
-    invoiceForm.style.display = '';
-    quotationForm.style.display = 'none';
-  } else {
-    invoiceForm.style.display = 'none';
-    quotationForm.style.display = '';
-  }
-});
+// Add quotation item rows
+addItemRow();
+function addItemRow() {
+  const row = document.createElement("tr");
+  const idx = itemsBody.children.length + 1;
+  row.innerHTML = `
+    <td>${idx}</td>
+    <td><input class="item" placeholder="Item name"></td>
+    <td><input class="desc" placeholder="Description"></td>
+    <td><input class="unit" placeholder="Unit e.g. pcs"></td>
+    <td><input class="qty" type="number" min="0" value="1"></td>
+    <td><input class="rate" type="number" min="0" step="0.01"></td>
+    <td><input class="amount" type="number" readonly></td>`;
+  itemsBody.appendChild(row);
 
-// mpesa toggle for invoice
-invPayment.addEventListener('change', () => {
-  if (invPayment.value === 'M-Pesa') mpesaCodeInvoice.style.display = 'block';
-  else mpesaCodeInvoice.style.display = 'none';
-});
-
-// Clear button
-clearBtn.addEventListener('click', (e) => {
-  e.preventDefault();
-  // reset invoice
-  document.getElementById('invCustomer').value = '';
-  document.getElementById('invService').value = '';
-  document.getElementById('invTotal').value = '';
-  document.getElementById('invPaid').value = '';
-  document.getElementById('invMpesaCode').value = '';
-  document.getElementById('invDate').value = '';
-  invPayment.value = '';
-  // reset quotation
-  document.getElementById('qClient').value = '';
-  document.getElementById('qDate').value = '';
-  document.getElementById('qValidUntil').value = '';
-  itemsBody.innerHTML = '';
-  addQuotationRow(); updateQuotationTotal();
-});
-
-// --- QUOTATION: dynamic rows & Enter behaviour ---
-let itemCounter = 0;
-function addQuotationRow(desc = '', unitCost = '') {
-  itemCounter++;
-  const tr = document.createElement('tr');
-  tr.dataset.row = itemCounter;
-  tr.innerHTML = `
-    <td class="right">${itemCounter}.</td>
-    <td><input class="item-desc" placeholder="Item description" value="${escapeHtml(desc)}" style="width:100%;"/></td>
-    <td><input class="item-unit" type="number" min="0" step="0.01" value="${unitCost}" style="width:100%;padding:6px;border-radius:6px;border:1px solid #ccc" /></td>
-    <td><input class="item-amount" readonly style="width:120px;padding:6px;border-radius:6px;border:1px solid #ccc;background:#fff" /></td>
-  `;
-  itemsBody.appendChild(tr);
-
-  const descInput = tr.querySelector('.item-desc');
-  const unitInput = tr.querySelector('.item-unit');
-  const amountInput = tr.querySelector('.item-amount');
-
-  // calculate amount when unit cost changes
-  function recalc() {
-    const u = parseFloat(unitInput.value || 0);
-    amountInput.value = u.toFixed(2);
-    updateQuotationTotal();
-  }
-
-  unitInput.addEventListener('input', recalc);
-  // add Enter behavior on description: create next row and focus it
-  descInput.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Enter') {
-      ev.preventDefault();
-      // if this is last row, add new row
-      const allDesc = Array.from(document.querySelectorAll('.item-desc'));
-      const last = allDesc[allDesc.length - 1];
-      if (descInput === last) {
-        addQuotationRow();
-        // focus newly added desc input after a tiny delay
-        setTimeout(() => {
-          const inputs = document.querySelectorAll('.item-desc');
-          inputs[inputs.length - 1].focus();
-        }, 30);
-      } else {
-        // otherwise move focus to next desc
-        const idx = allDesc.indexOf(descInput);
-        if (allDesc[idx+1]) allDesc[idx+1].focus();
+  row.querySelectorAll("input").forEach(i => {
+    i.addEventListener("input", updateTotals);
+    i.addEventListener("keydown", e => {
+      if (e.key === "Enter" && row === itemsBody.lastElementChild) {
+        e.preventDefault();
+        addItemRow();
       }
-    }
+    });
   });
-
-  // also allow Enter on unit cost to add next row
-  unitInput.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Enter') {
-      ev.preventDefault();
-      const allUnits = Array.from(document.querySelectorAll('.item-unit'));
-      const last = allUnits[allUnits.length - 1];
-      if (unitInput === last) {
-        addQuotationRow();
-        setTimeout(() => {
-          const inputs = document.querySelectorAll('.item-desc');
-          inputs[inputs.length - 1].focus();
-        }, 30);
-      } else {
-        const idx = allUnits.indexOf(unitInput);
-        if (allUnits[idx+1]) allUnits[idx+1].focus();
-      }
-    }
-  });
-
-  // initial recalc
-  recalc();
 }
 
-// calculate sum
-function updateQuotationTotal() {
-  let sum = 0;
-  document.querySelectorAll('.item-amount').forEach(inp => {
-    const v = parseFloat(inp.value || 0);
-    if (!isNaN(v)) sum += v;
-  });
-  qTotalInput.value = sum.toFixed(2);
-}
-
-// simple helper
-function escapeHtml(str){ if(!str) return ''; return String(str).replace(/[&<>"]/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-
-// initialize with 1 row
-addQuotationRow();
-
-// GENERATE PDF
-generateBtn.addEventListener('click', (e) => {
-  e.preventDefault();
-  const type = docType.value;
-  if (type === 'invoice') generateInvoicePDF();
-  else generateQuotationPDF();
-});
-
-function generateInvoicePDF(){
-  const customer = document.getElementById('invCustomer').value.trim() || '---';
-  const service = document.getElementById('invService').value.trim() || '---';
-  const total = parseFloat(document.getElementById('invTotal').value || 0);
-  const paid = parseFloat(document.getElementById('invPaid').value || 0);
-  const paymentMethod = invPayment.value || '---';
-  const mpesaCode = document.getElementById('invMpesaCode').value.trim();
-  const dateVal = document.getElementById('invDate').value;
-  const date = dateVal ? new Date(dateVal).toLocaleDateString() : new Date().toLocaleString();
-  const receiptNo = 'INV-' + Date.now().toString().slice(-6);
-  const servedBy = preparedBy.value;
-
-  const arrears = (total - paid);
-  const statusText = (arrears <= 0) ? 'FULLY PAID' : `ARREARS: Ksh ${arrears.toFixed(2)}`;
-
-  const doc = new jsPDF({unit:'mm', format:'a4', orientation:'portrait'});
-  const green = [15,81,50];
-
-  // border
-  doc.setDrawColor(...green);
-  doc.setLineWidth(1.2);
-  doc.rect(10,10,190,277);
-
-  // logo (try)
-  try { doc.addImage(logoBase64, 'PNG', 80, 14, 48, 30); } catch(e){}
-
-  doc.setTextColor(...green);
-  doc.setFontSize(18);
-  doc.text('BRIANSEVERALL SOLUTIONS', 105, 52, {align:'center'});
-  doc.setFontSize(11);
-  doc.setTextColor(0,0,0);
-  doc.text(`Official Invoice`, 105, 60, {align:'center'});
-  doc.setFontSize(10);
-  doc.text(`Invoice No: ${receiptNo}`, 20, 72);
-  doc.text(`Date: ${date}`, 150, 72);
-
-  doc.setFontSize(11);
-  doc.text(`Bill To: ${customer}`, 20, 82);
-  doc.text(`Served By: ${servedBy}`, 20, 92);
-
-  // service box
-  doc.setDrawColor(...green);
-  doc.setFillColor(240, 255, 245);
-  doc.rect(20,100,170,40,'FD');
-  doc.setTextColor(...green);
-  doc.setFontSize(12);
-  doc.text('Description', 25, 108);
-  doc.setTextColor(0,0,0);
-  doc.setFontSize(11);
-  doc.text(service, 25, 118, {maxWidth:160});
-
-  // amounts
-  doc.setFontSize(12);
-  doc.setTextColor(...green);
-  doc.text(`Total Due: Ksh ${total.toFixed(2)}`, 105, 150, {align:'center'});
-  doc.setTextColor(0,0,0);
-  doc.setFontSize(11);
-  doc.text(`Amount Paid: Ksh ${paid.toFixed(2)}`, 105, 158, {align:'center'});
-
-  doc.setFontSize(11);
-  doc.setTextColor(...green);
-  doc.text(statusText, 105, 168, {align:'center'});
-
-  // payment details including till
-  doc.setFontSize(10);
-  doc.setTextColor(0,0,0);
-  doc.text(`Payment Method: ${paymentMethod}`, 20, 182);
-  if (paymentMethod === 'M-Pesa' && mpesaCode) doc.text(`M-Pesa Code: ${mpesaCode}`, 20, 190);
-  doc.text(`Pay to Till: 8638410 (Brian Kiprop)`, 20, 198);
-
-  // stamp
-  try { doc.addImage(stampBase64, 'PNG', 140, 210, 45, 45); } catch(e){}
-
-  // footer
-  doc.setDrawColor(...green);
-  doc.line(20, 260, 190, 260);
-  doc.setFontSize(10);
-  doc.setTextColor(100);
-  doc.text('Thank you for choosing BRIANSEVERALL SOLUTIONS. We appreciate your business!', 105, 267, {align:'center'});
-  doc.text('Visit https://brianseverall.github.io or call us directly.', 105, 274, {align:'center'});
-
-  doc.save(`${receiptNo}.pdf`);
-}
-
-function generateQuotationPDF(){
-  const client = document.getElementById('qClient').value.trim() || '---';
-  const qDateVal = document.getElementById('qDate').value;
-  const qDate = qDateVal ? new Date(qDateVal).toLocaleDateString() : new Date().toLocaleDateString();
-  const validUntilVal = document.getElementById('qValidUntil').value;
-  const validUntil = validUntilVal ? new Date(validUntilVal).toLocaleDateString() : '---';
-  const prepared = preparedBy.value;
-  const quoteNo = 'QTE-' + Date.now().toString().slice(-6);
-
-  // collect items
-  const items = [];
-  const rows = document.querySelectorAll('#itemsBody tr');
-  rows.forEach((r, idx) => {
-    const desc = r.querySelector('.item-desc')?.value.trim() || '';
-    const unit = parseFloat(r.querySelector('.item-unit')?.value || 0);
-    if (desc || unit) items.push({no: idx+1, desc, unit});
-  });
-
-  // total
+function updateTotals() {
   let total = 0;
-  items.forEach(i => total += (i.unit || 0));
-
-  const doc = new jsPDF({unit:'mm', format:'a4', orientation:'portrait'});
-  const green = [15,81,50];
-
-  // border
-  doc.setDrawColor(...green);
-  doc.setLineWidth(1.2);
-  doc.rect(10,10,190,277);
-
-  // logo
-  try { doc.addImage(logoBase64, 'PNG', 78, 14, 48, 30); } catch(e){}
-
-  doc.setTextColor(...green);
-  doc.setFontSize(18);
-  doc.text('BRIANSEVERALL SOLUTIONS', 105, 52, {align:'center'});
-  doc.setFontSize(11);
-  doc.setTextColor(0,0,0);
-  doc.text('QUOTATION', 105, 60, {align:'center'});
-  doc.setFontSize(10);
-  doc.text(`Quote No: ${quoteNo}`, 20, 72);
-  doc.text(`Date: ${qDate}`, 20, 80);
-  doc.text(`Valid Until: ${validUntil}`, 150, 72);
-  doc.text(`Prepared By: ${prepared}`, 120, 80);
-
-  doc.setFontSize(11);
-  doc.text(`Prepared For: ${client}`, 20, 95);
-
-  // items header start Y
-  let startY = 105;
-  doc.setDrawColor(...green);
-  doc.setFillColor(245,255,245);
-  doc.rect(20, startY, 170, 8, 'FD');
-  doc.setTextColor(...green);
-  doc.setFontSize(11);
-  doc.text('#', 23, startY + 6);
-  doc.text('Description', 38, startY + 6);
-  doc.text('Unit Cost (Ksh)', 150, startY + 6, {align:'right'});
-
-  startY += 12;
-  doc.setTextColor(0,0,0);
-  doc.setFontSize(10);
-
-  // items rows
-  items.forEach((it, i) => {
-    const y = startY + (i * 8);
-    // row height check - simple page break
-    if (y > 250) {
-      doc.addPage();
-      startY = 20;
-    }
-    doc.text(String(it.no), 23, y);
-    doc.text(it.desc, 38, y, {maxWidth:100});
-    doc.text(it.unit.toFixed(2), 185, y, {align:'right'});
+  itemsBody.querySelectorAll("tr").forEach(row => {
+    const qty = parseFloat(row.querySelector(".qty").value) || 0;
+    const rate = parseFloat(row.querySelector(".rate").value) || 0;
+    const amount = qty * rate;
+    row.querySelector(".amount").value = amount.toFixed(2);
+    total += amount;
   });
-
-  // total
-  doc.setDrawColor(...green);
-  doc.line(110, startY + (items.length * 8) + 6, 190, startY + (items.length * 8) + 6);
-  doc.setFontSize(12);
-  doc.setTextColor(...green);
-  doc.text(`Total: Ksh ${total.toFixed(2)}`, 150, startY + (items.length * 8) + 14, {align:'right'});
-
-  // stamp
-  try { doc.addImage(stampBase64, 'PNG', 140, startY + (items.length * 8) + 20, 45, 45); } catch(e){}
-
-  // footer
-  doc.setDrawColor(...green);
-  doc.line(20, 260, 190, 260);
-  doc.setFontSize(10);
-  doc.setTextColor(100);
-  doc.text('Thank you for choosing BRIANSEVERALL SOLUTIONS. We appreciate your business!', 105, 267, {align:'center'});
-  doc.text('Visit https://brianseverall.github.io or call us directly.', 105, 274, {align:'center'});
-
-  doc.save(`${quoteNo}.pdf`);
+  qTotal.textContent = total.toFixed(2);
 }
 
-// initialize small defaults for convenience
-document.getElementById('invDate').valueAsDate = new Date();
-document.getElementById('qDate').valueAsDate = new Date();
-document.getElementById('qValidUntil').valueAsDate = (() => { const d=new Date(); d.setDate(d.getDate()+30); return d; })();
+// Clear form
+clearBtn.onclick = () => {
+  if (!confirm("Are you sure you want to clear all fields?")) return;
+  document.querySelectorAll("input").forEach(i => i.value = "");
+  qTotal.textContent = "0.00";
+  invBalance.textContent = "0.00";
+  itemsBody.innerHTML = "";
+  addItemRow();
+  invPayment.value = "";
+  mpesaContainer.style.display = "none";
+};
 
+// PDF Generation for Invoice or Quotation
+document.getElementById("printBtn").onclick = () => {
+  const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "A4" });
+  const margin = 40;
+  const pageWidth = pdf.internal.pageSize.width;
+  const pageHeight = pdf.internal.pageSize.height;
+  pdf.setDrawColor(...green);
+  pdf.rect(margin, margin, pageWidth - 2 * margin, pageHeight - 2 * margin);
+
+  pdf.setFontSize(16);
+  pdf.setTextColor(...green);
+  pdf.text("BRIANSEVERALL SOLUTIONS", pageWidth / 2, 70, { align: "center" });
+  pdf.setFontSize(12);
+  pdf.text(docType.value === "invoice" ? "Official Invoice" : "Official Quotation", pageWidth / 2, 90, { align: "center" });
+
+  const preparedBy = document.getElementById("preparedBy").value;
+  let y = 130;
+
+  // INVOICE PDF
+  if (docType.value === "invoice") {
+    const name = document.getElementById("invCustomer").value;
+    const date = document.getElementById("invDate").value;
+    const service = document.getElementById("invService").value;
+    const total = parseFloat(invTotal.value || 0);
+    const paid = parseFloat(invPaid.value || 0);
+    const balance = total - paid;
+    const method = document.getElementById("invPayment").value;
+    const mpesa = document.getElementById("invMpesaCode").value;
+
+    pdf.setFontSize(11);
+    pdf.setTextColor(0);
+    pdf.text(`Invoice No: INV-${Math.floor(Math.random() * 1000000)}`, 60, y);
+    pdf.text(`Date: ${date}`, pageWidth - 200, y);
+    y += 25;
+    pdf.text(`Bill To: ${name}`, 60, y);
+    y += 20;
+    pdf.text(`Served By: ${preparedBy}`, 60, y);
+    y += 30;
+
+    pdf.setDrawColor(...green);
+    pdf.setFillColor(...lightGreen);
+    pdf.roundedRect(60, y, pageWidth - 120, 80, 4, 4, "FD");
+    pdf.setFontSize(11);
+    pdf.setTextColor(...green);
+    pdf.text("Description", 70, y + 18);
+    pdf.setTextColor(0);
+    pdf.text(service || "No description provided", 70, y + 40);
+
+    y += 120;
+    pdf.setFontSize(11);
+    pdf.setTextColor(...green);
+    pdf.text(`Total Due: Ksh ${total.toFixed(2)}`, pageWidth / 2, y, { align: "center" });
+    y += 20;
+    pdf.text(`Amount Paid: Ksh ${paid.toFixed(2)}`, pageWidth / 2, y, { align: "center" });
+    y += 20;
+    pdf.setTextColor(200, 0, 0);
+    pdf.text(`Balance Due: Ksh ${balance.toFixed(2)}`, pageWidth / 2, y, { align: "center" });
+    y += 25;
+    pdf.setFontSize(11.5);
+    pdf.setTextColor(0, 128, 0);
+    const status = paid >= total ? "FULLY PAID" : "PARTIALLY PAID";
+    pdf.text(status, pageWidth / 2, y, { align: "center" });
+    y += 40;
+    pdf.setFontSize(10.5);
+    pdf.setTextColor(0);
+    pdf.text(`Payment Method: ${method || "-"}`, 60, y);
+    if (method === "M-Pesa" && mpesa) {
+      y += 18;
+      pdf.text(`M-Pesa Code: ${mpesa}`, 60, y);
+    }
+    y += 20;
+    pdf.text("Pay to Till Number: 8638410 (BRIANSEVERALL SOLUTIONS)", 60, y);
+  }
+
+  // QUOTATION PDF
+  else {
+    const client = document.getElementById("qClient").value;
+    const date = document.getElementById("qDate").value;
+    const valid = document.getElementById("qValidUntil").value;
+    pdf.setFontSize(11);
+    pdf.setTextColor(0);
+    pdf.text(`Date: ${date}`, 60, y);
+    pdf.text(`Valid Until: ${valid}`, pageWidth - 200, y);
+    y += 25;
+    pdf.text(`Prepared For: ${client}`, 60, y);
+    y += 20;
+    pdf.text(`Prepared By: ${preparedBy}`, 60, y);
+    y += 25;
+
+    const rows = [];
+    itemsBody.querySelectorAll("tr").forEach((row, i) => {
+      const item = row.querySelector(".item").value;
+      const desc = row.querySelector(".desc").value;
+      const unit = row.querySelector(".unit").value;
+      const qty = row.querySelector(".qty").value;
+      const rate = row.querySelector(".rate").value;
+      const amt = row.querySelector(".amount").value;
+      if (item || desc || rate)
+        rows.push([i + 1, item, desc, unit, qty, rate, amt]);
+    });
+
+    pdf.autoTable({
+      startY: y + 10,
+      head: [["S/No", "Item", "Description", "Unit", "Qty", "Rate (Ksh)", "Total (Ksh)"]],
+      body: rows,
+      theme: "grid",
+      styles: { halign: "center", fontSize: 10 },
+      headStyles: { fillColor: green, textColor: 255 },
+      margin: { left: 60, right: 60 }
+    });
+
+    let finalY = pdf.lastAutoTable.finalY + 25;
+    pdf.setFontSize(12);
+    pdf.setTextColor(...green);
+    pdf.text(`Total Quotation Amount: Ksh ${qTotal.textContent}`, pageWidth / 2, finalY, { align: "center" });
+  }
+
+  // FOOTER
+  pdf.setDrawColor(...green);
+  pdf.setLineWidth(0.5);
+  pdf.line(60, pageHeight - 70, pageWidth - 60, pageHeight - 70);
+  pdf.setFontSize(9);
+  pdf.setTextColor(100);
+  pdf.text("Thank you for choosing BRIANSEVERALL SOLUTIONS. We appreciate your business!", pageWidth / 2, pageHeight - 55, { align: "center" });
+
+  pdf.save(`${docType.value}_BRIANSEVERALL_SOLUTIONS.pdf`);
+};
 </script>
 </body>
 </html>
